@@ -1,8 +1,8 @@
 import csv
 import pandas as pd
 
-# Passenger ID has no predictive capacity, 
-# For Name titles are all that is needed (Mr, Mrs, Miss, Dr, etc...), 
+# Passenger ID has no predictive capacity but will be used as an index, so it will be dropped from the features,
+# For Name, titles are all that is needed (Mr, Mrs, Miss, Dr, etc...), 
 # Age has null values so it will be filled with median age, 
 # cabin has null values (only about 70% have a value) and it is not clear how to fill them, so it will be dropped,
 # Ticket has no clear pattern and it is not clear how to extract useful information from it, so it will be dropped,
