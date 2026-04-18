@@ -55,8 +55,8 @@ def preProcess(data):
     data.drop("Ticket", axis=1, inplace=True)
 
     # Bin continuous variables
-    data['Fare'] = pd.cut(data['Fare'], bins=3)
-    data['Age'] = pd.cut(data['Age'], bins=3)
+    data['Fare'] = pd.qcut(data['Fare'], q=3, duplicates='drop')
+    data['Age'] = pd.qcut(data['Age'], q=3, duplicates='drop')
 
 
 # ----------- ENTROPY -----------
@@ -174,6 +174,36 @@ def predict(tree, sample, default=0):
         # fallback (important!)
         return default  # default prediction (can improve later)
 
+# ----------- EVALUATION -----------
+
+def evaluate_model(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    # Confusion matrix components
+    TP = np.sum((y_true == 1) & (y_pred == 1))
+    TN = np.sum((y_true == 0) & (y_pred == 0))
+    FP = np.sum((y_true == 0) & (y_pred == 1))
+    FN = np.sum((y_true == 1) & (y_pred == 0))
+
+    # Metrics
+    accuracy = (TP + TN) / len(y_true)
+
+    precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+    recall = TP / (TP + FN) if (TP + FN) > 0 else 0
+
+    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+
+    # Print results
+    print("\nConfusion Matrix:")
+    print(f"TP: {TP}, FP: {FP}")
+    print(f"FN: {FN}, TN: {TN}")
+
+    print("\nMetrics:")
+    print(f"Accuracy : {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall   : {recall:.4f}")
+    print(f"F1 Score : {f1:.4f}")
 
 # ----------- MAIN -----------
 
@@ -187,8 +217,20 @@ def main():
     for feature in features:
         print(f"{feature}: {information_gain(data, feature):.4f}")
 
-    tree = build_tree(data, features, max_depth=3, min_samples=50)
+    tree = build_tree(data, features, max_depth=5, min_samples=10)
 
+    y_true = data["Survived"].values
+    y_pred = []
+
+    default = data["Survived"].mode()[0]
+
+    for _, row in data.iterrows():
+        pred = predict(tree, row, default)
+        y_pred.append(pred)
+
+    evaluate_model(y_true, y_pred)
+
+    # Visualization
     dot = visualize_tree(tree)
     dot.render("titanic_tree", format="png", view=True)
 
@@ -196,8 +238,7 @@ def main():
     test_data = pd.read_csv("test.csv")
     preProcess(test_data)
 
-    # Predict
-    default = data["Survived"].mode()[0]
+    # Predict on test set
     predictions = []
     for _, row in test_data.iterrows():
         pred = predict(tree, row, default)
